@@ -1,0 +1,61 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fabric Stain Classifier</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+</head>
+<body>
+  <h1>Upload an Image of Fabric</h1>
+  <input type="file" id="imageInput">
+  <div id="predictionResult"></div>
+  <div id="cleaningAdvice"></div>
+
+
+
+  <script>
+    const classNames = ["blood", "clean", "coffee", "mold", "various_stains"];
+    const cleaningTips = {
+      "clean": "No stain detected.",
+      "coffee": "Washwith alkaline powder and warm water.",
+      "mold": "Wash with bleach and alkaline detergent.",
+      "various_stains": "Use alkaline detergent and  wash with hot water.",
+      "blood": "Soak in cold water and use peroxide."
+    };
+
+    let model;
+    async function loadModel() {
+      model = await tf.loadLayersModel('tfjs_model/model.json');
+      console.log("Model loaded");
+    }
+
+    function preprocessImage(image) {
+      return tf.browser.fromPixels(image)
+               .resizeNearestNeighbor([224, 224])
+               .toFloat()
+               .div(255.0)
+               .expandDims();
+    }
+
+    document.getElementById('imageInput').addEventListener('change', async (event) => {
+      const file = event.target.files[0];
+      const img = new Image();
+      img.onload = async () => {
+        const tensor = preprocessImage(img);
+        const prediction = model.predict(tensor);
+        const index = prediction.argMax(1).dataSync()[0];
+        const label = classNames[index];
+        document.getElementById('predictionResult').innerText = "Stain Type: " + label;
+        document.getElementById('cleaningAdvice').innerText = "Cleaning Tip: " + cleaningTips[label];
+      };
+      img.src = URL.createObjectURL(file);
+    });
+
+    loadModel();
+	
+	
+	
+  </script>
+</body>
+</html>
